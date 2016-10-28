@@ -60,7 +60,12 @@
          *
          */
           showOnEmpty: false,
-
+        /*
+        *  Flag to specifiy whether or not to filter items from the picker 
+        *  that have already been added.
+        *
+        */
+         filterAddedItems: false,
          /*
          *  The data source to search.  Can be a string, function, or array of objects
          *
@@ -418,7 +423,21 @@
 
          return idx;
       },
+      _findByKeysInOptionData: function (item) {
+          var keys = this.options.keyAttrs,
+              vals, find, idx = -1;
 
+          vals = _.values(_.pick(item, keys));
+          if (vals.length == keys.length) {
+
+              find = _.findWhere(this.optionData, _.object(keys, vals));
+              if (find) {
+                  idx = _.indexOf(this.optionData, find);
+              }
+          }
+
+          return idx;
+      },
       _create: function() {
 
          var opt = this.options;
@@ -728,7 +747,8 @@
 
             case 'click':
 
-               this.optionIndex = this._getPickerChildren().index( $currentTarget );
+                this.optionIndex = this._getPickerChildren().index($currentTarget);
+
                this._addSelectedItem();
                this.$input.focus();
 
@@ -840,8 +860,9 @@
       },
 
       _addSelectedItem: function() {
+          var dataToSearch = this.options.filterAddedItems ? this._getFilteredList() : this.optionData;
 
-         var item = this.optionData[ this.optionIndex ];
+          var item = dataToSearch[this.optionIndex];
 
          this._addItem( _.clone( item ) );
 
@@ -877,7 +898,7 @@
 
                   $el = $( this.options.formatSelectedItem( item ) ).attr({ 'data-role': 'selected-item', 'tabIndex': -1 });
                   if ( at == this.itemData.length ) {
-
+                    
                      if ( this.$itemList.has( this.$input ).length > 0 ) {
 
                         if ( where == 'start' )
@@ -1016,15 +1037,17 @@
          this.$pickerList.html('');
          this.optionIndex = -1;
 
-         if ( this.optionData.length > 0 ) {
+         var dataToLoad = this.options.filterAddedItems ? this._getFilteredList() : this.optionData;
+         _.each(dataToLoad, function (item) {
+             self.$pickerList.append($(self.options.formatPickerItem(self._formatter(item))).attr('data-role', 'picker-item'));
+         });
 
-            _.each( this.optionData, function( item ) {
-               self.$pickerList.append( $( self.options.formatPickerItem( self._formatter( item ) ) ).attr( 'data-role', 'picker-item' ) );
-            });
+         if (dataToLoad.length > 0) {
+            
 
             this._showPicker();
 
-            if ( this.options.preventNotFound || this.optionData.length == 1 ) {
+            if (this.options.preventNotFound || dataToLoad.length == 1) {
                this.optionIndex = 0;
                this._overPickerItem( this._getPickerChildren().eq( 0 ) );
             }
@@ -1162,6 +1185,21 @@
 
          if ( !this.minInputWidth )
             this.minInputWidth = this.$input.width();
+      },
+      _getFilteredList: function () {
+          var returnValue = [];
+          var self = this;
+
+          var idx;
+          var indicesToRemove = [];
+          _.each(this.optionData, function (item) {
+              idx = self._findByKeys(item);
+
+              if (idx < 0) {
+                  returnValue.push(item);
+              }
+          });
+          return returnValue;
       }
 
    });
