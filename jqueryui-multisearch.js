@@ -55,6 +55,11 @@
       *  Available options for each widget instance
       */
       options: {
+          /*
+         *  Flag to specifiy whether or not to show when there is no text.
+         *
+         */
+          showOnEmpty: false,
 
          /*
          *  The data source to search.  Can be a string, function, or array of objects
@@ -434,6 +439,7 @@
          this.$itemList = this.element.find( '[data-role="selected-list"]' );
 
          this.$input.on( 'keydown.multisearch', $.proxy( this, '_processInput' ) );
+         this.$input.on('focus.multisearch', $.proxy(this, '_checkEmpty'));
 
          this.$picker.on( 'click.multisearch mouseenter.multisearch mouseleave.multisearch', '[data-role="picker-item"]', $.proxy( this, '_processPicker' ) );
          this.$itemList.on( 'click.multisearch mouseenter.multisearch mouseleave keydown.multisearch', '[data-role="selected-item"]', $.proxy( this, '_processSelected' ) );
@@ -571,8 +577,15 @@
          this.optionData = null;
          this.itemData = null;
       },
-
+      _checkEmpty: function (event) {
+          var self = this,
+             opt = this.options;
+          if (this.$input.val().length === 0 && opt.showOnEmpty) {
+              _.defer($.proxy(this, '_search'));
+          }
+      },
       _processInput: function ( event ) {
+          var opt = this.options;
 
          switch( event.keyCode ) {
 
@@ -631,7 +644,9 @@
 
                    return false;
                 }
-
+                else if (this.$input.val().length === 1 && opt.showOnEmpty) {
+                    _.defer($.proxy(this, '_search'));
+                }
                 break;
 
              case jQuery.ui.keyCode.BACKSPACE:
@@ -651,10 +666,16 @@
                         }
                      }
                      return false;
-                 } else if( this.$input.val().length === 1 ) {
-                     // The last character is going to be
-                     // deleted.  Hide the picker.
-                     this._hidePicker();
+                 } else if (this.$input.val().length === 1) {
+                     if (!opt.showOnEmpty) {
+                         // The last character is going to be
+                         // deleted.  Hide the picker.
+                         this._hidePicker();
+                     }
+                     else {
+                         _.defer($.proxy(this, '_search'));
+                     }
+                     
                  } else {
                      // New search string
                      _.defer( $.proxy( this, '_search' ) );
