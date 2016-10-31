@@ -65,7 +65,15 @@
         *  that have already been added.
         *
         */
-         filterAddedItems: false,
+          filterAddedItems: false,
+          /*
+          *
+          * Flag to specify whether or not the to cache an empty string search.
+          * Important if you would like to run the search again everytime the selected
+          * list is changed.
+          *
+          */
+          storeEmptyStringCache: true,
          /*
          *  The data source to search.  Can be a string, function, or array of objects
          *
@@ -483,8 +491,11 @@
 
             self._trigger( 'searched', null, { term: term, picker: self.$picker, list: data } );
 
-            self.localCache[term] = data;
-            self.optionData = data.slice( 0, opt.maxShowOptions );
+            if (term.length > 0 || opt.storeEmptyStringCache) {
+                self.localCache[term] = data;
+            }
+            
+            self.optionData = opt.filterAddedItems ? data.slice(0) : data.slice(0, opt.maxShowOptions);
             self._renderPickerItems();
          }
 
@@ -540,7 +551,7 @@
 
                var results = _.filter( opt.source, function ( item ) { return self._matcher.call( self, item ); });
 
-               self.optionData = results.slice( 0, opt.maxShowOptions );
+               self.optionData = opt.filterAddedItems ? results.slice(0) : results.slice(0, opt.maxShowOptions);
                self._renderPickerItems();
             }
          }
@@ -917,6 +928,10 @@
                      this.itemData.splice( at, 0, item );
                   }
 
+                  //if (opt.searchOnListChanged) {
+                  //    _.defer($.proxy(this, '_search'));
+                  //}
+
                   this.$input.val('');
                   this.search_text = '';
                   this._hidePicker();
@@ -1154,8 +1169,11 @@
 
             cache = _.filter( this.localCache[search], function ( item ) { return self._matcher.call( self, item ); });
 
-            this.localCache[this.search_text] = cache;
-            this.optionData = cache.slice( 0, this.options.maxShowOptions );
+            if (this.search_text.length > 0 || opt.storeEmptyStringCache) {
+                this.localCache[this.search_text] = cache;
+            }
+            
+            this.optionData = opt.filterAddedItems ? cache.slice(0) : cache.slice(0, this.options.maxShowOptions);
             this._renderPickerItems();
 
          } else {
@@ -1199,7 +1217,7 @@
                   returnValue.push(item);
               }
           });
-          return returnValue;
+          return this.options.filterAddedItems ? returnValue.slice(0, this.options.maxShowOptions) : returnValue;
       }
 
    });
