@@ -300,12 +300,18 @@
 
             // Lookup by keys
             if ( ( idx = this._findByKeys( item ) ) > -1 )
-               this._removeItem( idx, { silent: true } );
+                this._removeItem(idx, { silent: true });
+            if (this.options.showOnEmpty && 0 === this.search_text.length) {
+                _.defer($.proxy(this, '_search'));
+            }
 
          } else {
 
             // Number index
-            this._removeItem( item, { silent: true } );
+             this._removeItem(item, { silent: true });
+             if (this.options.showOnEmpty && 0 === this.search_text.length) {
+                 _.defer($.proxy(this, '_search'));
+             }
          }
       },
 
@@ -692,7 +698,12 @@
                               this.itemIndex = this.itemData.length - 1;
                               this._getSelectedChildren().eq( this.itemIndex ).trigger( 'mouseenter' );
                            }
-                           this._hidePicker();
+                           if (!opt.showOnEmpty) {
+                               this._hidePicker();
+                           }
+                           else {
+                               _.defer($.proxy(this, '_search'));
+                           }
                         }
                      }
                      return false;
@@ -927,10 +938,6 @@
                      $el.insertBefore( this._getSelectedChildren().eq( at ) );
                      this.itemData.splice( at, 0, item );
                   }
-
-                  //if (opt.searchOnListChanged) {
-                  //    _.defer($.proxy(this, '_search'));
-                  //}
 
                   this.$input.val('');
                   this.search_text = '';
@@ -1169,11 +1176,11 @@
 
             cache = _.filter( this.localCache[search], function ( item ) { return self._matcher.call( self, item ); });
 
-            if (this.search_text.length > 0 || opt.storeEmptyStringCache) {
+            if (this.search_text.length > 0 || this.options.storeEmptyStringCache) {
                 this.localCache[this.search_text] = cache;
             }
             
-            this.optionData = opt.filterAddedItems ? cache.slice(0) : cache.slice(0, this.options.maxShowOptions);
+            this.optionData = this.options.filterAddedItems ? cache.slice(0) : cache.slice(0, this.options.maxShowOptions);
             this._renderPickerItems();
 
          } else {
